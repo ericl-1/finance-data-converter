@@ -30,7 +30,7 @@ The included page uses a restrictive Content Security Policy and does not load r
 
 ## Version
 
-Current development beta: `v0.10.0 Beta`
+Current development beta: `v0.10.2 Beta`
 
 ## License
 
