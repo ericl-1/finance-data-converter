@@ -28,6 +28,10 @@ Support is based on the structure of specific export formats and is not a guaran
 
 The included page uses a restrictive Content Security Policy and does not load remote resources. Static hosting is recommended. HTTPS should be enabled by the hosting provider.
 
+## Product direction
+
+The agreed product boundary, priorities, and longer-term direction are recorded in [PRODUCT_DIRECTION.md](PRODUCT_DIRECTION.md). Shared Expenses discovery and the decisions required before its converter can be implemented are tracked in [SHARED_EXPENSES.md](SHARED_EXPENSES.md).
+
 ## Version
 
 Current development beta: `v0.10.2 Beta`
