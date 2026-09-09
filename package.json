@@ -1,0 +1,7 @@
+{
+  "name": "finance-data-converter",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/regression.test.js"
+  }
+}

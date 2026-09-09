@@ -1,0 +1,220 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const test = require('node:test');
+const vm = require('node:vm');
+
+function loadConverter() {
+  const ConverterCore = require('../converter-core.js');
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const inline = html.match(/<script>([\s\S]*)<\/script>/)?.[1];
+  assert.ok(inline, 'Expected the application inline script');
+  const setupMarker = "document.querySelectorAll('[data-dest]').forEach(btn=>btn.onclick=()=>{destination=";
+  const coreScript = inline.slice(0, inline.indexOf(setupMarker));
+  assert.ok(coreScript.length < inline.length, 'Expected to find the browser setup marker');
+
+  const context = { console, Intl, TextDecoder, URL, Blob, setTimeout, clearTimeout, ConverterCore };
+  vm.createContext(context);
+  vm.runInContext(`${coreScript}\n;globalThis.testApi={
+    convert(destinationKey,text,name='Synthetic source'){
+      destination=destinationKey;source=parseSourceText(text,name);converted=[];issues=[];detected=null;excluded=0;duplicateCount=0;selectedMonth='';expenseAll=[];expenseMonths=[];expenseExcludedByMonth={};
+      if(source)detectAndConvert();
+      return this.snapshot();
+    },
+    selectExpenseMonth(month){selectedMonth=month;converted=expenseAll.filter(r=>r.month===month);excluded=expenseExcludedByMonth[month]||0;return this.snapshot()},
+    convertShared(blocks){destination='shared';sharedBlocks=blocks;excluded=0;duplicateCount=0;const result=buildSharedConversion(blocks);converted=result.rows;issues=result.issues;sharedDuplicateCount=result.possibleDuplicates;source={headers:['Total Amount','Description'],rows:converted.map(r=>[r.amount,r.details]),name:'Shared Expenses pasted blocks',format:'shared-pastes'};detected=converted.length?{kind:'shared',label:'Shared Expenses'}:null;return this.snapshot()},
+    select(index,value){converted[index].selected=value;return this.snapshot()},
+    snapshot(){return JSON.parse(JSON.stringify({detected,converted,issues,excluded,duplicateCount,sharedDuplicateCount,expenseMonths,csv:detected?csv():'',workbookRows:detected?workbookRows():'',totals:totals()}))}
+  };`, context);
+  const api = context.testApi;
+  const normalize = value => JSON.parse(JSON.stringify(value));
+  return {
+    convert: (...args) => normalize(api.convert(...args)),
+    selectExpenseMonth: (...args) => normalize(api.selectExpenseMonth(...args)),
+    convertShared: (...args) => normalize(api.convertShared(...args)),
+    select: (...args) => normalize(api.select(...args))
+  };
+}
+
+test('Budget Tracker converts split money columns and preserves source order', () => {
+  const app = loadConverter();
+  const result = app.convert('budget', [
+    'Date\tDescription\tWithdrawals\tDeposits',
+    '2026-01-05\tSample purchase\t12.34\t',
+    '2026-01-15\tSample deposit\t\t500.00'
+  ].join('\n'));
+
+  assert.equal(result.detected.kind, 'split');
+  assert.deepEqual(result.converted.map(row => [row.date, row.details, row.amount, row.type]), [
+    ['2026-01-05', 'Sample purchase', 12.34, 'Money Out'],
+    ['2026-01-15', 'Sample deposit', 500, 'Money In']
+  ]);
+  assert.equal(result.workbookRows, '2026-01-05\tSample purchase\t12.34\r\n2026-01-15\tSample deposit\t500.00');
+  assert.equal(result.csv, 'Date,Details,Amount\r\n2026-01-05,Sample purchase,12.34\r\n2026-01-15,Sample deposit,500.00');
+});
+
+test('canonical transactions retain provenance, signed amounts, and review metadata', () => {
+  const core = require('../converter-core.js');
+  const source = core.parseSourceText([
+    'Date\tDescription\tWithdrawals\tDeposits',
+    '2026-01-05\tSample purchase\t12.34\t'
+  ].join('\n'), 'synthetic-td.tsv');
+  const result = core.convertParsedSource('budget', source);
+  const transaction = result.transactions[0];
+
+  assert.deepEqual(transaction, {
+    date: '2026-01-05',
+    rawDescription: 'Sample purchase',
+    normalizedDescription: 'Sample purchase',
+    amountSigned: -12.34,
+    direction: 'Money Out',
+    sourceProfile: 'generic-split',
+    sourceFile: 'synthetic-td.tsv',
+    sourceRow: 1,
+    status: 'ready',
+    warnings: [],
+    metadata: {}
+  });
+});
+
+test('TD headerless activity is recognized without treating its first row as headers', () => {
+  const app = loadConverter();
+  const result = app.convert('budget', [
+    '01/05/2026\tPurchase one\t10.00\t\t990.00',
+    '01/06/2026\tDeposit one\t\t25.00\t1015.00'
+  ].join('\n'));
+
+  assert.equal(result.detected.label, 'TD account activity · headerless 5-column export');
+  assert.equal(result.converted.length, 2);
+  assert.deepEqual(result.converted.map(row => row.details), ['Purchase one', 'Deposit one']);
+});
+
+test('Desjardins headerless chequing retains descriptions and money direction', () => {
+  const app = loadConverter();
+  const row = (date, description, withdrawal, deposit, balance) => [
+    'Bank', 'Account', 'Code', date, 'Sequence', description, '', withdrawal, deposit, '', '', '', '', balance
+  ].join('\t');
+  const result = app.convert('budget', [
+    row('2026-02-01', 'Synthetic café purchase', '15.75', '', '984.25'),
+    row('2026-02-02', 'Synthetic deposit', '', '100.00', '1084.25')
+  ].join('\n'));
+
+  assert.equal(result.detected.label, 'Desjardins chequing · headerless 14-column export');
+  assert.deepEqual(result.converted.map(item => [item.details, item.type]), [
+    ['Synthetic café purchase', 'Money Out'],
+    ['Synthetic deposit', 'Money In']
+  ]);
+});
+
+test('Budget Tracker supports a generic signed amount profile', () => {
+  const app = loadConverter();
+  const result = app.convert('budget', [
+    'Date,Description,Amount',
+    '2026-03-01,Synthetic withdrawal,-12.50',
+    '2026-03-02,Synthetic deposit,40.00'
+  ].join('\n'));
+
+  assert.equal(result.detected.kind, 'signed');
+  assert.deepEqual(result.converted.map(item => [item.amount, item.type]), [
+    [12.5, 'Money Out'],
+    [40, 'Money In']
+  ]);
+});
+
+test('Savings signed amounts split into Money In and Money Out output columns', () => {
+  const app = loadConverter();
+  const result = app.convert('savings', [
+    'Date\tTransaction\tName\tMemo\tAmount',
+    '01/05/2026\tOTHER\tSample deposit\tIgnored memo\t25.00',
+    '01/12/2026\tOTHER\tSample withdrawal\tIgnored memo\t-10.00'
+  ].join('\n'));
+
+  assert.equal(result.detected.kind, 'signed');
+  assert.equal(result.workbookRows, '2026-01-05\t25.00\t\tSample deposit\t\r\n2026-01-12\t\t10.00\tSample withdrawal\t');
+  assert.equal(result.totals.in, 25);
+  assert.equal(result.totals.out, 10);
+});
+
+test('Savings recognizes pasted French split columns', () => {
+  const app = loadConverter();
+  const result = app.convert('savings', [
+    'Date\tDescriptif\tRetrait\tDepot',
+    '1 mars 2026\tAchat synthétique\t18,25\t',
+    '2 mars 2026\tDépôt synthétique\t\t75,00'
+  ].join('\n'));
+
+  assert.equal(result.detected.label, 'Desjardins Savings · pasted French statement');
+  assert.deepEqual(result.converted.map(item => [item.date, item.amount, item.type]), [
+    ['2026-03-01', 18.25, 'Money Out'],
+    ['2026-03-02', 75, 'Money In']
+  ]);
+});
+
+test('Expense Calculator excludes positive rows and preserves reversed purchase order', () => {
+  const app = loadConverter();
+  app.convert('expense', [
+    'Transaction date,Transaction,Name,Memo,Amount',
+    '01/01/2026,DEBIT,FIRST SHOP,, -10.00',
+    '01/02/2026,CREDIT,SAMPLE PAYMENT,,20.00',
+    '01/03/2026,DEBIT,SECOND SHOP,, -30.00'
+  ].join('\n'));
+  const result = app.selectExpenseMonth('2026-01');
+
+  assert.deepEqual(result.expenseMonths, ['2026-01']);
+  assert.equal(result.excluded, 1);
+  assert.deepEqual(result.converted.map(row => row.details), ['Tangerine MC (SECOND SHOP)', 'Tangerine MC (FIRST SHOP)']);
+  assert.equal(result.csv, 'Description,Amount\r\nTangerine MC (SECOND SHOP),30.00\r\nTangerine MC (FIRST SHOP),10.00');
+});
+
+test('Shared Expenses combines both blocks, assigns payers, and preserves block order', () => {
+  const app = loadConverter();
+  const result = app.convertShared([
+    { payer: 'Alex', text: '$30.03\tTangerine MC (Amazon)\n$47.88\tTangerine MC (Uber)' },
+    { payer: 'Fawn', text: 'Pizza 68.04\nGroceries 21.05' }
+  ]);
+
+  assert.deepEqual(result.converted.map(row => [row.date, row.payer, row.amount, row.details]), [
+    ['', 'Alex', 30.03, 'Tangerine MC (Amazon)'],
+    ['', 'Alex', 47.88, 'Tangerine MC (Uber)'],
+    ['', 'Fawn', 68.04, 'Pizza'],
+    ['', 'Fawn', 21.05, 'Groceries']
+  ]);
+  assert.equal(result.workbookRows, '\tAlex\t30.03\tTangerine MC (Amazon)\r\n\tAlex\t47.88\tTangerine MC (Uber)\r\n\tFawn\t68.04\tPizza\r\n\tFawn\t21.05\tGroceries');
+  assert.equal(result.csv.split('\r\n')[0], 'Date,Paid By,Total Amount,Description');
+});
+
+test('Shared Expenses flags duplicates and negative amounts without removing rows', () => {
+  const app = loadConverter();
+  const result = app.convertShared([
+    { payer: 'Alex', text: '$10.00\tSame merchant' },
+    { payer: 'Fawn', text: 'Same merchant 10.00\nUnexpected refund -5.00' }
+  ]);
+
+  assert.equal(result.converted.length, 3);
+  assert.equal(result.sharedDuplicateCount, 2);
+  assert.deepEqual(result.converted.map(row => row.duplicate), [true, true, false]);
+  assert.match(result.issues.join('\n'), /negative amount -5\.00/);
+  assert.match(result.issues.join('\n'), /Possible duplicate group 1/);
+});
+
+test('row exclusion changes Shared Expenses exports and reconciliation totals', () => {
+  const app = loadConverter();
+  app.convertShared([
+    { payer: 'Alex', text: '$30.00\tFirst item\n$20.00\tSecond item' },
+    { payer: 'Fawn', text: 'Third item 10.00' }
+  ]);
+  const result = app.select(1, false);
+
+  assert.equal(result.converted.filter(row => row.selected !== false).length, 2);
+  assert.equal(result.totals.out, 40);
+  assert.doesNotMatch(result.workbookRows, /Second item/);
+});
+
+test('unsupported columns fail without producing converted rows', () => {
+  const app = loadConverter();
+  const result = app.convert('budget', 'Unknown\tOther\nabc\t123');
+
+  assert.equal(result.detected, null);
+  assert.equal(result.converted.length, 0);
+  assert.match(result.issues[0], /Date and Details\/Description/);
+});

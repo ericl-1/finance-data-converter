@@ -28,6 +28,18 @@ Support is based on the structure of specific export formats and is not a guaran
 
 The included page uses a restrictive Content Security Policy and does not load remote resources. Static hosting is recommended. HTTPS should be enabled by the hosting provider.
 
+## Testing
+
+Run the zero-dependency regression suite with `npm test`. The tests execute the same conversion engine used by `index.html` against synthetic fixtures and cover source recognition, canonical transactions, destination output, exclusions, ordering, duplicate warnings, selection totals, and unsupported inputs.
+
+Financial exports and workbook contents must not be used as fixtures. Add only synthetic examples that preserve the source structure needed for the regression.
+
+## Architecture
+
+`converter-core.js` contains the source parsing, profile recognition, canonical transaction model, validation findings, and destination adaptation logic. It has no browser UI dependency and is consumed by both `index.html` and the automated tests.
+
+Canonical transactions retain the original and normalized descriptions, signed amount, direction, source profile, source filename and row, review status, warnings, and destination-specific metadata. The browser page owns only session state, interaction, preview, selection, receipts, and export presentation.
+
 ## Product direction
 
 The agreed product boundary, priorities, and longer-term direction are recorded in [PRODUCT_DIRECTION.md](PRODUCT_DIRECTION.md). Shared Expenses discovery and the decisions required before its converter can be implemented are tracked in [SHARED_EXPENSES.md](SHARED_EXPENSES.md).
