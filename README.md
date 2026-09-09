@@ -40,6 +40,12 @@ Financial exports and workbook contents must not be used as fixtures. Add only s
 
 Canonical transactions retain the original and normalized descriptions, signed amount, direction, source profile, source filename and row, review status, warnings, and destination-specific metadata. The browser page owns only session state, interaction, preview, selection, receipts, and export presentation.
 
+## Validation behavior
+
+Validation preserves usable work. Missing dates, unexpected Shared Expenses negative amounts, and possible duplicates are review notes. Unreadable or conflicting individual rows are skipped with an explanation while valid rows remain exportable. Unsupported sources produce no output rather than guessed output.
+
+Copy and download stay available whenever at least one valid row is selected. The review panel and conversion receipt report review notes and skipped rows separately.
+
 ## Product direction
 
 The agreed product boundary, priorities, and longer-term direction are recorded in [PRODUCT_DIRECTION.md](PRODUCT_DIRECTION.md). Shared Expenses discovery and the decisions required before its converter can be implemented are tracked in [SHARED_EXPENSES.md](SHARED_EXPENSES.md).

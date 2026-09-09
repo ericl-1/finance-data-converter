@@ -17,14 +17,14 @@ function loadConverter() {
   vm.createContext(context);
   vm.runInContext(`${coreScript}\n;globalThis.testApi={
     convert(destinationKey,text,name='Synthetic source'){
-      destination=destinationKey;source=parseSourceText(text,name);converted=[];issues=[];detected=null;excluded=0;duplicateCount=0;selectedMonth='';expenseAll=[];expenseMonths=[];expenseExcludedByMonth={};
+      destination=destinationKey;source=parseSourceText(text,name);converted=[];issues=[];findings=[];detected=null;excluded=0;duplicateCount=0;selectedMonth='';expenseAll=[];expenseMonths=[];expenseExcludedByMonth={};
       if(source)detectAndConvert();
       return this.snapshot();
     },
     selectExpenseMonth(month){selectedMonth=month;converted=expenseAll.filter(r=>r.month===month);excluded=expenseExcludedByMonth[month]||0;return this.snapshot()},
-    convertShared(blocks){destination='shared';sharedBlocks=blocks;excluded=0;duplicateCount=0;const result=buildSharedConversion(blocks);converted=result.rows;issues=result.issues;sharedDuplicateCount=result.possibleDuplicates;source={headers:['Total Amount','Description'],rows:converted.map(r=>[r.amount,r.details]),name:'Shared Expenses pasted blocks',format:'shared-pastes'};detected=converted.length?{kind:'shared',label:'Shared Expenses'}:null;return this.snapshot()},
+    convertShared(blocks){destination='shared';sharedBlocks=blocks;excluded=0;duplicateCount=0;const result=buildSharedConversion(blocks);converted=result.rows;issues=result.issues;findings=result.findings;sharedDuplicateCount=result.possibleDuplicates;source={headers:['Total Amount','Description'],rows:converted.map(r=>[r.amount,r.details]),name:'Shared Expenses pasted blocks',format:'shared-pastes'};detected=converted.length?{kind:'shared',label:'Shared Expenses'}:null;return this.snapshot()},
     select(index,value){converted[index].selected=value;return this.snapshot()},
-    snapshot(){return JSON.parse(JSON.stringify({detected,converted,issues,excluded,duplicateCount,sharedDuplicateCount,expenseMonths,csv:detected?csv():'',workbookRows:detected?workbookRows():'',totals:totals()}))}
+    snapshot(){return JSON.parse(JSON.stringify({detected,converted,issues,findings,excluded,duplicateCount,sharedDuplicateCount,expenseMonths,csv:detected?csv():'',workbookRows:detected?workbookRows():'',totals:totals()}))}
   };`, context);
   const api = context.testApi;
   const normalize = value => JSON.parse(JSON.stringify(value));
@@ -210,6 +210,31 @@ test('row exclusion changes Shared Expenses exports and reconciliation totals', 
   assert.doesNotMatch(result.workbookRows, /Second item/);
 });
 
+test('missing dates are review notes while valid rows remain exportable', () => {
+  const app = loadConverter();
+  const result = app.convert('budget', [
+    'Date\tDescription\tWithdrawals\tDeposits',
+    '\tUndated purchase\t12.00\t'
+  ].join('\n'));
+
+  assert.equal(result.converted.length, 1);
+  assert.equal(result.workbookRows, '\tUndated purchase\t12.00');
+  assert.deepEqual(result.findings.map(finding => finding.kind), ['review']);
+});
+
+test('malformed rows are skipped without discarding valid output', () => {
+  const app = loadConverter();
+  const result = app.convert('budget', [
+    'Date\tDescription\tWithdrawals\tDeposits',
+    '2026-01-01\tConflicting row\t10.00\t20.00',
+    '2026-01-02\tValid row\t5.00\t'
+  ].join('\n'));
+
+  assert.equal(result.converted.length, 1);
+  assert.match(result.workbookRows, /Valid row/);
+  assert.deepEqual(result.findings.map(finding => finding.kind), ['skipped']);
+});
+
 test('unsupported columns fail without producing converted rows', () => {
   const app = loadConverter();
   const result = app.convert('budget', 'Unknown\tOther\nabc\t123');
@@ -217,4 +242,5 @@ test('unsupported columns fail without producing converted rows', () => {
   assert.equal(result.detected, null);
   assert.equal(result.converted.length, 0);
   assert.match(result.issues[0], /Date and Details\/Description/);
+  assert.deepEqual(result.findings.map(finding => finding.kind), ['no-output']);
 });
