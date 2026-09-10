@@ -589,6 +589,8 @@ test('PWA metadata and offline shell stay complete and session-safe', () => {
   assert.match(html, /id="installApp"/);
   assert.match(html, /navigator\.serviceWorker\.register\('\.\/service-worker\.js'\)/);
   assert.match(html, /worker-src 'self'/);
+  assert.match(html, /\$\('installApp'\)\.hidden=!canRegisterServiceWorker\|\|runningInstalled/);
+  assert.match(html, /Add to Dock/);
 
   for (const asset of ['index.html', 'converter-core.js', 'manifest.webmanifest', 'icons/app-icon-192.png', 'icons/app-icon-512.png', 'icons/app-icon-maskable-512.png']) {
     assert.ok(fs.existsSync(path.join(root, asset)), `Expected ${asset} to exist`);

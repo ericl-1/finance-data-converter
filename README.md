@@ -16,7 +16,7 @@ When opened from GitHub Pages in a supported browser, the converter can be insta
 2. Select **Install app** when that button appears, or use the browser's install option.
 3. Open Finance Data Converter from the computer's Applications or app launcher.
 
-The install button is shown only when the browser reports that the app is installable. Chrome and Edge generally support this flow. Other browsers may use **Add to Dock**, **Add to Home Screen**, or their own installation menu.
+The install button appears on the secure hosted version. Chrome and Edge generally open a native installation prompt. When a browser does not provide that prompt directly, the app points to its **Install**, **Add to Dock**, or **Add to Home Screen** menu option instead.
 
 Updates are downloaded in the background but do not force-refresh an active conversion. Close every open converter tab or installed-app window and reopen it when the app reports that an update is ready. Working financial data is not saved through an update or relaunch.
 
