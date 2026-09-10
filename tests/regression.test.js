@@ -38,6 +38,16 @@ function loadConverter() {
   };
 }
 
+test('release version is consistent across application metadata', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const readme = fs.readFileSync(path.join(__dirname, '..', 'README.md'), 'utf8');
+  const packageMetadata = require('../package.json');
+
+  assert.match(html, />v0\.11\.0 Beta<\/div>/);
+  assert.match(readme, /`v0\.11\.0 Beta`/);
+  assert.equal(packageMetadata.version, '0.11.0-beta.0');
+});
+
 test('Budget Tracker converts split money columns and preserves source order', () => {
   const app = loadConverter();
   const result = app.convert('budget', [

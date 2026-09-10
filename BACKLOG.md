@@ -50,6 +50,10 @@ Decide from real use whether to recognize occasional dates, support repeated blo
 
 ## Done
 
+### REL-003 — v0.11.0 Beta release alignment
+
+Application, repository metadata, documentation, and release notes identify the current feature set as v0.11.0 Beta. Regression coverage checks that version references remain aligned.
+
 ### EDT-001 — Session-only transaction editing
 
 Review rows can be corrected before export. Edited output fields, totals, copy/download data, canonical metadata, and Shared Expenses duplicate flags update in memory; edited rows are visibly marked and original values are retained for traceability.
