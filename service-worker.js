@@ -1,4 +1,4 @@
-const CACHE_NAME = 'finance-data-converter-v0.11.0-4';
+const CACHE_NAME = 'finance-data-converter-v0.11.0-5';
 const APP_SHELL = [
   './',
   './index.html',
