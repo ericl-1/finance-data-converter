@@ -48,6 +48,8 @@ Validation preserves usable work. Missing dates, zero amounts, unusual currency 
 
 Exact duplicate rows found across combined Expense Calculator files are removed. Other likely duplicates are retained and flagged using date, direction, amount, and normalized description so the user can keep or exclude them. Shared Expenses uses amount and description because its normal inputs do not include dates.
 
+Merchant normalization is deterministic and conservative. Repeated whitespace is collapsed for every destination. The recognized Tangerine Expense profile also removes a trailing location only when it matches the app's explicit city/province list. Reference codes, punctuation, unknown locations, and merchant wording are retained. Whenever output differs, the original description remains available during review.
+
 Copy and download stay available whenever at least one valid row is selected. The review panel and conversion receipt report review notes and skipped rows separately. The receipt also reconciles every imported row as converted, source-excluded, skipped, or deduplicated and flags any accounting mismatch for review.
 
 ## Product direction

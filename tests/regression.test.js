@@ -89,6 +89,41 @@ test('canonical transactions retain provenance, signed amounts, and review metad
   });
 });
 
+test('merchant normalization is conservative and preserves original descriptions', () => {
+  const core = require('../converter-core.js');
+  const generic = core.canonicalTransaction({
+    rawDescription: 'MERCHANT   WITH   SPACES',
+    amountSigned: -10,
+    direction: 'Money Out',
+    sourceProfile: 'generic-signed'
+  });
+  const expense = core.canonicalTransaction({
+    rawDescription: 'Amazon.ca*5N6EW68O2   OTTAWA ON',
+    amountSigned: -30.03,
+    direction: 'Money Out',
+    sourceProfile: 'tangerine-world-mc'
+  });
+
+  assert.equal(generic.rawDescription, 'MERCHANT   WITH   SPACES');
+  assert.equal(generic.normalizedDescription, 'MERCHANT WITH SPACES');
+  assert.equal(expense.rawDescription, 'Amazon.ca*5N6EW68O2   OTTAWA ON');
+  assert.equal(expense.normalizedDescription, 'Amazon.ca*5N6EW68O2');
+  assert.equal(core.normalizeDescription('SHOP UNKNOWNVILLE ON', 'tangerine-world-mc'), 'SHOP UNKNOWNVILLE ON');
+});
+
+test('normalized descriptions are used in output and duplicate comparison', () => {
+  const app = loadConverter();
+  const result = app.convert('budget', [
+    'Date,Description,Withdrawal',
+    '2026-01-05,"  MERCHANT   NAME  ",12.34',
+    '2026-01-05,MERCHANT NAME,12.34'
+  ].join('\n'));
+
+  assert.deepEqual(result.converted.map(row => row.details), ['MERCHANT NAME', 'MERCHANT NAME']);
+  assert.equal(result.converted[0].canonical.rawDescription, '  MERCHANT   NAME  ');
+  assert.deepEqual(result.converted.map(row => row.duplicate), [true, true]);
+});
+
 test('TD headerless activity is recognized without treating its first row as headers', () => {
   const app = loadConverter();
   const result = app.convert('budget', [

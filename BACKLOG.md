@@ -12,10 +12,6 @@ Run representative monthly pastes through the enabled destination and log any re
 
 ## Planned
 
-### MER-001 — Deterministic merchant normalization
-
-Separate raw and normalized descriptions, apply conservative cleanup rules, and always preserve the original value for comparison.
-
 ### BAT-001 — Controlled batch processing
 
 Permit multiple files only for source profiles with explicit compatibility, account, period, ordering, and duplicate rules.
@@ -41,6 +37,10 @@ Formalize source-to-destination rules as maintainable configuration. Do not buil
 Decide from real use whether to recognize occasional dates, support repeated blocks, offer configured payer choices, clean descriptions, show per-block source totals, or add month selection.
 
 ## Done
+
+### MER-001 — Deterministic merchant normalization
+
+Raw descriptions remain attached to canonical transactions while normalized descriptions drive output and duplicate comparison. All destinations collapse repeated whitespace; the recognized Tangerine Expense profile also removes only known trailing city/province locations. Reference codes, punctuation, unknown locations, and merchant wording are preserved, and changed descriptions display their original value during review.
 
 ### VAL-002 — Expand validation coverage
 
