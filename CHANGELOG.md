@@ -17,6 +17,7 @@ All notable changes to Finance Data Converter are recorded here.
 
 - App updates wait for all converter windows to close instead of forcing a refresh during an active session.
 - The hosted app always exposes installation guidance, including when a browser does not provide a native installation prompt event.
+- Online page launches check for the newest deployed interface while retaining a cached fallback for offline launches.
 - Comma-only amounts now distinguish common decimal-comma values from thousands-separated values.
 - Possible duplicates remain selected and exportable until the user chooses to exclude them.
 
