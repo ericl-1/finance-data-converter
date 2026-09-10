@@ -121,6 +121,32 @@ test('Budget Tracker supports a generic signed amount profile', () => {
   ]);
 });
 
+test('Budget Tracker supports money-out-only columns', () => {
+  const app = loadConverter();
+  const result = app.convert('budget', [
+    'Date,Description,Withdrawal',
+    '2026-03-03,"Coffee, snacks",12.34'
+  ].join('\n'));
+
+  assert.equal(result.detected.kind, 'out');
+  assert.deepEqual(result.converted.map(item => [item.details, item.amount, item.type]), [
+    ['Coffee, snacks', 12.34, 'Money Out']
+  ]);
+});
+
+test('Budget Tracker supports money-in-only columns', () => {
+  const app = loadConverter();
+  const result = app.convert('budget', [
+    'Date,Description,Deposit',
+    '2026-03-04,Synthetic reimbursement,"1,234.56"'
+  ].join('\n'));
+
+  assert.equal(result.detected.kind, 'in');
+  assert.deepEqual(result.converted.map(item => [item.amount, item.type]), [
+    [1234.56, 'Money In']
+  ]);
+});
+
 test('Savings signed amounts split into Money In and Money Out output columns', () => {
   const app = loadConverter();
   const result = app.convert('savings', [
@@ -164,6 +190,23 @@ test('Expense Calculator excludes positive rows and preserves reversed purchase 
   assert.equal(result.excluded, 1);
   assert.deepEqual(result.converted.map(row => row.details), ['Tangerine MC (SECOND SHOP)', 'Tangerine MC (FIRST SHOP)']);
   assert.equal(result.csv, 'Description,Amount\r\nTangerine MC (SECOND SHOP),30.00\r\nTangerine MC (FIRST SHOP),10.00');
+});
+
+test('Expense Calculator removes exact duplicates across files but retains repeats within a file', () => {
+  const core = require('../converter-core.js');
+  const header = 'Transaction date,Transaction,Name,Memo,Amount';
+  const repeated = '01/01/2026,DEBIT,SAME SHOP,,-10.00';
+  const first = core.parseSourceText([header, repeated, repeated].join('\n'), 'first.csv');
+  const second = core.parseSourceText([header, repeated, '01/02/2026,DEBIT,OTHER SHOP,,-20.00'].join('\n'), 'second.csv');
+  const result = core.combineExpenseSources([
+    { name: 'first.csv', parsed: first },
+    { name: 'second.csv', parsed: second }
+  ]);
+
+  assert.equal(result.duplicateCount, 1);
+  assert.equal(result.source.rows.length, 3);
+  assert.equal(result.source.name, 'first.csv, second.csv');
+  assert.equal(result.source.rows.filter(row => row[2] === 'SAME SHOP').length, 2);
 });
 
 test('Shared Expenses combines both blocks, assigns payers, and preserves block order', () => {

@@ -52,11 +52,15 @@ A useful scope test is: if a capability improves preparing data for another dest
 
 ## Priorities
 
+Implementation status and the ordered working queue are maintained in [BACKLOG.md](BACKLOG.md).
+
 ### 1. Finish Shared Expenses
 
-Complete the original four-destination workflow before widening the product. Define exact inputs, transformations, exclusions, output fields and order, reconciliation rules, and single-file or batch behavior before implementing unsupported assumptions. See [SHARED_EXPENSES.md](SHARED_EXPENSES.md).
+**Initial implementation complete; monthly UAT remains.** Complete the original four-destination workflow before widening the product. See [SHARED_EXPENSES.md](SHARED_EXPENSES.md).
 
 ### 2. Harden reliability and architecture
+
+**Foundation complete; coverage continues as formats and rules are added.**
 
 - Add sanitized synthetic fixtures and automated regression tests for recognition, transformation, exclusions, ordering, totals, output, and failure cases.
 - Move toward a canonical transaction model that separates source parsing from destination transformation.
@@ -64,6 +68,8 @@ Complete the original four-destination workflow before widening the product. Def
 - Preserve privacy-safe diagnostics and safe failure for unsupported or ambiguous files.
 
 ### 3. Improve validation and reconciliation
+
+**Soft validation statuses complete; source-row accounting is next.**
 
 Prioritize confidence checks such as missing or invalid dates, unreadable or zero amounts, conflicting debit and credit values, suspicious duplicates, incompatible periods, unexpected row structures, and count or total mismatches.
 

@@ -48,7 +48,7 @@ Copy and download stay available whenever at least one valid row is selected. Th
 
 ## Product direction
 
-The agreed product boundary, priorities, and longer-term direction are recorded in [PRODUCT_DIRECTION.md](PRODUCT_DIRECTION.md). Shared Expenses discovery and the decisions required before its converter can be implemented are tracked in [SHARED_EXPENSES.md](SHARED_EXPENSES.md).
+The agreed product boundary, priorities, and longer-term direction are recorded in [PRODUCT_DIRECTION.md](PRODUCT_DIRECTION.md). Current delivery status is maintained in [BACKLOG.md](BACKLOG.md), and Shared Expenses requirements and UAT questions are tracked in [SHARED_EXPENSES.md](SHARED_EXPENSES.md).
 
 ## Version
 
