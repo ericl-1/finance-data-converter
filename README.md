@@ -38,7 +38,9 @@ Financial exports and workbook contents must not be used as fixtures. Add only s
 
 `converter-core.js` contains the source parsing, profile recognition, canonical transaction model, validation findings, and destination adaptation logic. It has no browser UI dependency and is consumed by both `index.html` and the automated tests.
 
-Canonical transactions retain the original and normalized descriptions, signed amount, direction, source profile, source filename and row, review status, warnings, and destination-specific metadata. The browser page owns only session state, interaction, preview, selection, receipts, and export presentation.
+Canonical transactions retain the original and normalized descriptions, signed amount, direction, source profile, source filename and row, review status, warnings, and destination-specific metadata. The browser page owns only session state, interaction, preview, selection, editing, receipts, and export presentation.
+
+Rows can be edited during review. Changes affect only the current browser session and its copy/download output, edited rows are marked, and original output values remain attached to the row for traceability. Refreshing or closing the page clears the edits with the rest of the working data.
 
 ## Validation behavior
 

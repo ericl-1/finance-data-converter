@@ -24,10 +24,6 @@ Automatically remove only deterministic cross-file duplicates. Flag similar date
 
 Separate raw and normalized descriptions, apply conservative cleanup rules, and always preserve the original value for comparison.
 
-### EDT-001 — Session-only transaction editing
-
-Allow corrections to supported row fields during review. Edits remain in memory for the current conversion only and are clearly marked.
-
 ### BAT-001 — Controlled batch processing
 
 Permit multiple files only for source profiles with explicit compatibility, account, period, ordering, and duplicate rules.
@@ -53,6 +49,10 @@ Formalize source-to-destination rules as maintainable configuration. Do not buil
 Decide from real use whether to recognize occasional dates, support repeated blocks, offer configured payer choices, clean descriptions, show per-block source totals, or add month selection.
 
 ## Done
+
+### EDT-001 — Session-only transaction editing
+
+Review rows can be corrected before export. Edited output fields, totals, copy/download data, canonical metadata, and Shared Expenses duplicate flags update in memory; edited rows are visibly marked and original values are retained for traceability.
 
 ### REL-002 — Reconcile source-row accounting
 

@@ -24,6 +24,7 @@ function loadConverter() {
     selectExpenseMonth(month){selectedMonth=month;converted=expenseAll.filter(r=>r.month===month);excluded=expenseExcludedByMonth[month]||0;return this.snapshot()},
     convertShared(blocks){destination='shared';sharedBlocks=blocks;excluded=0;duplicateCount=0;const result=buildSharedConversion(blocks);converted=result.rows;issues=result.issues;findings=result.findings;sharedDuplicateCount=result.possibleDuplicates;applyAccounting(result.accounting);source={headers:['Total Amount','Description'],rows:converted.map(r=>[r.amount,r.details]),name:'Shared Expenses pasted blocks',format:'shared-pastes'};detected=converted.length?{kind:'shared',label:'Shared Expenses'}:null;return this.snapshot()},
     select(index,value){converted[index].selected=value;return this.snapshot()},
+    edit(index,changes){const result=applyRowEdit(converted[index],changes,destination);if(result.ok)refreshSharedDuplicates();return {result:JSON.parse(JSON.stringify(result)),snapshot:this.snapshot()}},
     snapshot(){return JSON.parse(JSON.stringify({detected,converted,issues,findings,excluded,duplicateCount,accounting,sharedDuplicateCount,expenseMonths,csv:detected?csv():'',workbookRows:detected?workbookRows():'',totals:totals()}))}
   };`, context);
   const api = context.testApi;
@@ -32,7 +33,8 @@ function loadConverter() {
     convert: (...args) => normalize(api.convert(...args)),
     selectExpenseMonth: (...args) => normalize(api.selectExpenseMonth(...args)),
     convertShared: (...args) => normalize(api.convertShared(...args)),
-    select: (...args) => normalize(api.select(...args))
+    select: (...args) => normalize(api.select(...args)),
+    edit: (...args) => normalize(api.edit(...args))
   };
 }
 
@@ -251,6 +253,61 @@ test('row exclusion changes Shared Expenses exports and reconciliation totals', 
   assert.equal(result.converted.filter(row => row.selected !== false).length, 2);
   assert.equal(result.totals.out, 40);
   assert.doesNotMatch(result.workbookRows, /Second item/);
+});
+
+test('session edits update workbook output and preserve original values', () => {
+  const app = loadConverter();
+  app.convert('budget', [
+    'Date,Description,Withdrawal,Deposit',
+    '2026-01-05,Original merchant,12.34,'
+  ].join('\n'));
+  const { result, snapshot } = app.edit(0, {
+    date: '2026-01-06',
+    details: 'Corrected merchant',
+    amount: '15.25',
+    type: 'Money In'
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.changed, true);
+  assert.equal(snapshot.workbookRows, '2026-01-06\tCorrected merchant\t15.25');
+  assert.equal(snapshot.converted[0].edited, true);
+  assert.deepEqual(snapshot.converted[0].editedFields, ['date', 'details', 'amount', 'type']);
+  assert.deepEqual(snapshot.converted[0].originalOutput, {
+    date: '2026-01-05',
+    details: 'Original merchant',
+    amount: 12.34,
+    type: 'Money Out'
+  });
+  assert.equal(snapshot.converted[0].canonical.rawDescription, 'Original merchant');
+  assert.equal(snapshot.converted[0].canonical.amountSigned, 15.25);
+});
+
+test('invalid session edit amounts are rejected without changing the row', () => {
+  const app = loadConverter();
+  app.convertShared([
+    { payer: 'Alex', text: '$10.00\tOriginal merchant' },
+    { payer: '', text: '' }
+  ]);
+  const { result, snapshot } = app.edit(0, { amount: 'not an amount' });
+
+  assert.equal(result.ok, false);
+  assert.equal(snapshot.converted[0].amount, 10);
+  assert.equal(snapshot.converted[0].edited, undefined);
+});
+
+test('editing Shared Expenses recalculates possible duplicate flags', () => {
+  const app = loadConverter();
+  app.convertShared([
+    { payer: 'Alex', text: '$10.00\tSame merchant' },
+    { payer: 'Fawn', text: 'Same merchant 10.00' }
+  ]);
+  const { snapshot } = app.edit(1, { details: 'Different merchant' });
+
+  assert.equal(snapshot.sharedDuplicateCount, 0);
+  assert.deepEqual(snapshot.converted.map(row => row.duplicate), [false, false]);
+  assert.equal(snapshot.converted[1].canonical.direction, 'Money Out');
+  assert.equal(snapshot.converted[1].canonical.amountSigned, 10);
 });
 
 test('missing dates are review notes while valid rows remain exportable', () => {
