@@ -44,7 +44,9 @@ Rows can be edited during review. Changes affect only the current browser sessio
 
 ## Validation behavior
 
-Validation preserves usable work. Missing dates, unexpected Shared Expenses negative amounts, and possible duplicates are review notes. Unreadable or conflicting individual rows are skipped with an explanation while valid rows remain exportable. Unsupported sources produce no output rather than guessed output.
+Validation preserves usable work. Missing dates, zero amounts, unusual currency interpretation, extra source columns, ambiguous generic header mappings, unexpected Shared Expenses negative amounts, and possible duplicates are review notes. Unreadable or conflicting individual rows are skipped with an explanation while valid rows remain exportable. Unsupported sources produce no output rather than guessed output.
+
+Exact duplicate rows found across combined Expense Calculator files are removed. Other likely duplicates are retained and flagged using date, direction, amount, and normalized description so the user can keep or exclude them. Shared Expenses uses amount and description because its normal inputs do not include dates.
 
 Copy and download stay available whenever at least one valid row is selected. The review panel and conversion receipt report review notes and skipped rows separately. The receipt also reconciles every imported row as converted, source-excluded, skipped, or deduplicated and flags any accounting mismatch for review.
 

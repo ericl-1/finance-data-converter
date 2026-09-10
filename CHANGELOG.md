@@ -2,6 +2,18 @@
 
 All notable changes to Finance Data Converter are recorded here.
 
+## Unreleased
+
+### Added
+
+- Non-blocking review guidance for zero amounts, ambiguous comma interpretation, extra source columns, and ambiguous generic header mappings.
+- Possible-duplicate review across Budget Tracker, Savings, and Expense Calculator using date, direction, amount, and normalized description.
+
+### Changed
+
+- Comma-only amounts now distinguish common decimal-comma values from thousands-separated values.
+- Possible duplicates remain selected and exportable until the user chooses to exclude them.
+
 ## v0.11.0 Beta — 2026-09-10
 
 ### Added

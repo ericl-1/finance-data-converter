@@ -159,6 +159,81 @@ test('Budget Tracker supports money-in-only columns', () => {
   ]);
 });
 
+test('currency parsing distinguishes decimal commas from thousands separators', () => {
+  const core = require('../converter-core.js');
+
+  assert.equal(core.cleanNum('18,25'), 18.25);
+  assert.equal(core.cleanNum('1,234'), 1234);
+  assert.equal(core.cleanNum('1,234.56'), 1234.56);
+  assert.equal(core.cleanNum('1.234,56'), 1234.56);
+  assert.equal(core.cleanNum('(1,234.56)'), -1234.56);
+});
+
+test('zero amounts remain usable with a soft review warning', () => {
+  const app = loadConverter();
+  const result = app.convert('budget', [
+    'Date,Description,Withdrawal',
+    '2026-03-05,Synthetic zero,0.00'
+  ].join('\n'));
+
+  assert.equal(result.converted.length, 1);
+  assert.equal(result.converted[0].amount, 0);
+  assert.deepEqual(result.findings.map(finding => finding.kind), ['review']);
+  assert.match(result.issues[0], /zero amount/);
+});
+
+test('unexpected source row widths are reported without blocking usable rows', () => {
+  const app = loadConverter();
+  const result = app.convert('budget', [
+    'Date,Description,Withdrawal',
+    '2026-03-05,Synthetic purchase,12.00,unexpected'
+  ].join('\n'));
+
+  assert.equal(result.converted.length, 1);
+  assert.match(result.issues.join('\n'), /4 columns; expected 3/);
+  assert.ok(result.findings.some(finding => finding.kind === 'review'));
+});
+
+test('ambiguous comma amounts are parsed as thousands with review guidance', () => {
+  const app = loadConverter();
+  const result = app.convert('budget', [
+    'Date\tDescription\tWithdrawal',
+    '2026-03-05\tSynthetic purchase\t1,234'
+  ].join('\n'));
+
+  assert.equal(result.converted[0].amount, 1234);
+  assert.match(result.issues.join('\n'), /interpreted comma as a thousands separator/);
+  assert.ok(result.findings.some(finding => finding.kind === 'review'));
+});
+
+test('matching converted transactions are flagged as possible duplicates and retained', () => {
+  const app = loadConverter();
+  const result = app.convert('budget', [
+    'Date,Description,Withdrawal',
+    '2026-03-05,Same merchant,12.00',
+    '2026-03-05,Same merchant,12.00',
+    '2026-03-06,Same merchant,12.00'
+  ].join('\n'));
+
+  assert.equal(result.converted.length, 3);
+  assert.equal(result.sharedDuplicateCount, 2);
+  assert.deepEqual(result.converted.map(row => row.duplicate), [true, true, false]);
+  assert.match(result.issues.join('\n'), /Possible duplicate group 1/);
+});
+
+test('ambiguous generic headers are reported while the selected mapping remains usable', () => {
+  const app = loadConverter();
+  const result = app.convert('budget', [
+    'Date,Posted Date,Description,Withdrawal',
+    '2026-03-05,2026-03-06,Synthetic purchase,12.00'
+  ].join('\n'));
+
+  assert.equal(result.converted.length, 1);
+  assert.equal(result.converted[0].date, '2026-03-05');
+  assert.match(result.issues.join('\n'), /multiple possible date columns; used “Date”/);
+  assert.ok(result.findings.some(finding => finding.kind === 'review'));
+});
+
 test('Savings signed amounts split into Money In and Money Out output columns', () => {
   const app = loadConverter();
   const result = app.convert('savings', [
@@ -221,6 +296,20 @@ test('Expense Calculator removes exact duplicates across files but retains repea
   assert.equal(result.source.rows.filter(row => row[2] === 'SAME SHOP').length, 2);
 });
 
+test('Expense Calculator flags equivalent converted rows with different source-only fields', () => {
+  const app = loadConverter();
+  app.convert('expense', [
+    'Transaction date,Transaction,Name,Memo,Amount',
+    '01/01/2026,DEBIT,SAME SHOP,first memo,-10.00',
+    '01/01/2026,DEBIT,SAME SHOP,second memo,-10.00'
+  ].join('\n'));
+  const result = app.selectExpenseMonth('2026-01');
+
+  assert.equal(result.converted.length, 2);
+  assert.equal(result.sharedDuplicateCount, 2);
+  assert.deepEqual(result.converted.map(row => row.duplicate), [true, true]);
+});
+
 test('Shared Expenses combines both blocks, assigns payers, and preserves block order', () => {
   const app = loadConverter();
   const result = app.convertShared([
@@ -250,6 +339,19 @@ test('Shared Expenses flags duplicates and negative amounts without removing row
   assert.deepEqual(result.converted.map(row => row.duplicate), [true, true, false]);
   assert.match(result.issues.join('\n'), /negative amount -5\.00/);
   assert.match(result.issues.join('\n'), /Possible duplicate group 1/);
+});
+
+test('Shared Expenses retains zero amounts with a review warning', () => {
+  const app = loadConverter();
+  const result = app.convertShared([
+    { payer: 'Alex', text: '$0.00\tPending adjustment' },
+    { payer: '', text: '' }
+  ]);
+
+  assert.equal(result.converted.length, 1);
+  assert.equal(result.converted[0].amount, 0);
+  assert.match(result.issues.join('\n'), /zero amount/);
+  assert.ok(result.findings.some(finding => finding.kind === 'review'));
 });
 
 test('row exclusion changes Shared Expenses exports and reconciliation totals', () => {

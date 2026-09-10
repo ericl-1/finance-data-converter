@@ -12,14 +12,6 @@ Run representative monthly pastes through the enabled destination and log any re
 
 ## Planned
 
-### VAL-002 — Expand validation coverage
-
-Add focused checks for zero amounts, unusual currency formats, unexpected row shapes, incompatible periods in supported batches, and ambiguous source matches.
-
-### DUP-001 — Separate definite and possible duplicates
-
-Automatically remove only deterministic cross-file duplicates. Flag similar date/amount/description matches for review without removing them.
-
 ### MER-001 — Deterministic merchant normalization
 
 Separate raw and normalized descriptions, apply conservative cleanup rules, and always preserve the original value for comparison.
@@ -49,6 +41,14 @@ Formalize source-to-destination rules as maintainable configuration. Do not buil
 Decide from real use whether to recognize occasional dates, support repeated blocks, offer configured payer choices, clean descriptions, show per-block source totals, or add month selection.
 
 ## Done
+
+### VAL-002 — Expand validation coverage
+
+Zero amounts, ambiguous comma formatting, extra source columns, and ambiguous generic header mappings now produce non-blocking review guidance. Common decimal-comma, thousands-separator, mixed-separator, currency-symbol, and accounting-parentheses formats are covered by regression tests. Batch-period compatibility remains with BAT-001 because no safe destination rule has yet been defined.
+
+### DUP-001 — Separate definite and possible duplicates
+
+Exact duplicate rows found across Expense Calculator files are removed deterministically. Rows sharing the same date, direction, amount, and normalized description are retained and visibly flagged for review across standard destinations; Shared Expenses continues using amount and description because dates are normally absent.
 
 ### REL-003 — v0.11.0 Beta release alignment
 
