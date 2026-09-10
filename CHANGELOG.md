@@ -19,6 +19,7 @@ All notable changes to Finance Data Converter are recorded here.
 - The hosted app always exposes installation guidance, including when a browser does not provide a native installation prompt event.
 - Online page launches check for the newest deployed interface while retaining a cached fallback for offline launches.
 - Installation remains visible on HTTPS even when an embedded browser incorrectly reports standalone display mode.
+- The restrictive Content Security Policy explicitly permits Chrome to load the same-origin PWA manifest.
 - Comma-only amounts now distinguish common decimal-comma values from thousands-separated values.
 - Possible duplicates remain selected and exportable until the user chooses to exclude them.
 

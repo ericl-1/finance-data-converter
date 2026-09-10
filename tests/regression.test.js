@@ -589,6 +589,7 @@ test('PWA metadata and offline shell stay complete and session-safe', () => {
   assert.match(html, /id="installApp"/);
   assert.match(html, /navigator\.serviceWorker\.register\('\.\/service-worker\.js'\)/);
   assert.match(html, /worker-src 'self'/);
+  assert.match(html, /manifest-src 'self'/);
   assert.doesNotMatch(html, /id="installApp"[^>]*hidden/);
   assert.match(html, /\$\('installApp'\)\.hidden=!canRegisterServiceWorker/);
   assert.match(html, /Add to Dock/);
