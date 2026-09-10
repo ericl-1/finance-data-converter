@@ -6,10 +6,6 @@ This is the working delivery backlog. Product boundaries and strategy remain in 
 
 ## Next
 
-### REL-002 — Reconcile source-row accounting
-
-Confirm and display that every source row is accounted for as converted, source-excluded, skipped, or deduplicated. Surface a review note if the counts do not reconcile.
-
 ### UAT-SE-001 — Complete Shared Expenses monthly UAT
 
 Run representative monthly pastes through the enabled destination and log any real-world headers, notes, dates, payer-entry friction, duplicate behavior, or ordering issues.
@@ -57,6 +53,10 @@ Formalize source-to-destination rules as maintainable configuration. Do not buil
 Decide from real use whether to recognize occasional dates, support repeated blocks, offer configured payer choices, clean descriptions, show per-block source totals, or add month selection.
 
 ## Done
+
+### REL-002 — Reconcile source-row accounting
+
+Every source row is categorized as converted, source-excluded, skipped, or deduplicated. The conversion receipt shows the full accounting equation and surfaces a review note if the counts do not reconcile.
 
 ### SE-001 — Shared Expenses initial destination
 

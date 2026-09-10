@@ -69,7 +69,7 @@ Implementation status and the ordered working queue are maintained in [BACKLOG.m
 
 ### 3. Improve validation and reconciliation
 
-**Soft validation statuses complete; source-row accounting is next.**
+**Soft validation statuses and source-row accounting are complete; focused validation coverage continues.**
 
 Prioritize confidence checks such as missing or invalid dates, unreadable or zero amounts, conflicting debit and credit values, suspicious duplicates, incompatible periods, unexpected row structures, and count or total mismatches.
 

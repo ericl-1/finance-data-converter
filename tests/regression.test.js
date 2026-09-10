@@ -17,14 +17,14 @@ function loadConverter() {
   vm.createContext(context);
   vm.runInContext(`${coreScript}\n;globalThis.testApi={
     convert(destinationKey,text,name='Synthetic source'){
-      destination=destinationKey;source=parseSourceText(text,name);converted=[];issues=[];findings=[];detected=null;excluded=0;duplicateCount=0;selectedMonth='';expenseAll=[];expenseMonths=[];expenseExcludedByMonth={};
+      destination=destinationKey;source=parseSourceText(text,name);converted=[];issues=[];findings=[];detected=null;excluded=0;duplicateCount=0;accounting=null;selectedMonth='';expenseAll=[];expenseMonths=[];expenseExcludedByMonth={};
       if(source)detectAndConvert();
       return this.snapshot();
     },
     selectExpenseMonth(month){selectedMonth=month;converted=expenseAll.filter(r=>r.month===month);excluded=expenseExcludedByMonth[month]||0;return this.snapshot()},
-    convertShared(blocks){destination='shared';sharedBlocks=blocks;excluded=0;duplicateCount=0;const result=buildSharedConversion(blocks);converted=result.rows;issues=result.issues;findings=result.findings;sharedDuplicateCount=result.possibleDuplicates;source={headers:['Total Amount','Description'],rows:converted.map(r=>[r.amount,r.details]),name:'Shared Expenses pasted blocks',format:'shared-pastes'};detected=converted.length?{kind:'shared',label:'Shared Expenses'}:null;return this.snapshot()},
+    convertShared(blocks){destination='shared';sharedBlocks=blocks;excluded=0;duplicateCount=0;const result=buildSharedConversion(blocks);converted=result.rows;issues=result.issues;findings=result.findings;sharedDuplicateCount=result.possibleDuplicates;applyAccounting(result.accounting);source={headers:['Total Amount','Description'],rows:converted.map(r=>[r.amount,r.details]),name:'Shared Expenses pasted blocks',format:'shared-pastes'};detected=converted.length?{kind:'shared',label:'Shared Expenses'}:null;return this.snapshot()},
     select(index,value){converted[index].selected=value;return this.snapshot()},
-    snapshot(){return JSON.parse(JSON.stringify({detected,converted,issues,findings,excluded,duplicateCount,sharedDuplicateCount,expenseMonths,csv:detected?csv():'',workbookRows:detected?workbookRows():'',totals:totals()}))}
+    snapshot(){return JSON.parse(JSON.stringify({detected,converted,issues,findings,excluded,duplicateCount,accounting,sharedDuplicateCount,expenseMonths,csv:detected?csv():'',workbookRows:detected?workbookRows():'',totals:totals()}))}
   };`, context);
   const api = context.testApi;
   const normalize = value => JSON.parse(JSON.stringify(value));
@@ -276,6 +276,49 @@ test('malformed rows are skipped without discarding valid output', () => {
   assert.equal(result.converted.length, 1);
   assert.match(result.workbookRows, /Valid row/);
   assert.deepEqual(result.findings.map(finding => finding.kind), ['skipped']);
+  assert.deepEqual(result.accounting, {
+    sourceRows: 2,
+    converted: 1,
+    sourceExcluded: 0,
+    skipped: 1,
+    deduplicated: 0,
+    accounted: 2,
+    reconciled: true
+  });
+});
+
+test('Expense Calculator accounting covers all months before month selection', () => {
+  const app = loadConverter();
+  const result = app.convert('expense', [
+    'Transaction date,Transaction,Name,Memo,Amount',
+    '01/01/2026,DEBIT,FIRST SHOP,,-10.00',
+    '01/02/2026,CREDIT,SAMPLE PAYMENT,,20.00',
+    '02/03/2026,DEBIT,SECOND SHOP,,-30.00',
+    '02/04/2026,DEBIT,BROKEN SHOP,,not-an-amount'
+  ].join('\n'));
+
+  assert.deepEqual(result.accounting, {
+    sourceRows: 4,
+    converted: 2,
+    sourceExcluded: 1,
+    skipped: 1,
+    deduplicated: 0,
+    accounted: 4,
+    reconciled: true
+  });
+});
+
+test('Shared Expenses accounting includes malformed non-empty paste lines', () => {
+  const app = loadConverter();
+  const result = app.convertShared([
+    { payer: 'Alex', text: '$10.00\tValid merchant\nUnreadable line' },
+    { payer: '', text: '' }
+  ]);
+
+  assert.equal(result.converted.length, 1);
+  assert.equal(result.accounting.sourceRows, 2);
+  assert.equal(result.accounting.skipped, 1);
+  assert.equal(result.accounting.reconciled, true);
 });
 
 test('unsupported columns fail without producing converted rows', () => {

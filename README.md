@@ -44,7 +44,7 @@ Canonical transactions retain the original and normalized descriptions, signed a
 
 Validation preserves usable work. Missing dates, unexpected Shared Expenses negative amounts, and possible duplicates are review notes. Unreadable or conflicting individual rows are skipped with an explanation while valid rows remain exportable. Unsupported sources produce no output rather than guessed output.
 
-Copy and download stay available whenever at least one valid row is selected. The review panel and conversion receipt report review notes and skipped rows separately.
+Copy and download stay available whenever at least one valid row is selected. The review panel and conversion receipt report review notes and skipped rows separately. The receipt also reconciles every imported row as converted, source-excluded, skipped, or deduplicated and flags any accounting mismatch for review.
 
 ## Product direction
 
