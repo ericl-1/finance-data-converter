@@ -12,6 +12,8 @@ No installation, account, database, or server is required.
 
 Imported files are read and transformed in browser memory. The application contains no analytics, network requests, remote storage, or upload service. Closing or refreshing the page clears the working data.
 
+Shared Expenses has an optional device-local preference for its two Paid By names. Only those names are stored when the user enables the setting. The saved names can be forgotten separately, and transactions, amounts, descriptions, dates, balances, and workbook contents are never included in local preferences.
+
 If you deploy a modified version, review any additions carefully: external scripts, analytics, fonts, APIs, or error-reporting services can change these privacy properties.
 
 ## Supported compatibility profiles

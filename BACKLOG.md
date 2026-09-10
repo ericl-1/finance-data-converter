@@ -18,10 +18,6 @@ Permit multiple files only for source profiles with explicit compatibility, acco
 
 ## Explore
 
-### CFG-001 — Local non-financial configuration
-
-Evaluate device-local storage for payer names, merchant aliases, preferences, mappings, and import recipes. Do not persist imported transactions, balances, or workbook contents.
-
 ### PWA-001 — Offline and installable packaging
 
 Evaluate a service worker, install manifest, offline launch, update behavior, and accessible installed-app presentation.
@@ -37,6 +33,10 @@ Formalize source-to-destination rules as maintainable configuration. Do not buil
 Decide from real use whether to recognize occasional dates, support repeated blocks, offer configured payer choices, clean descriptions, show per-block source totals, or add month selection.
 
 ## Done
+
+### CFG-001 — Local non-financial configuration
+
+Shared Expenses can optionally remember its two Paid By names in browser-local storage. The stored object is schema-limited to those names, can be removed independently of session data, and never includes transactions, amounts, descriptions, dates, balances, or workbook contents. Additional configuration categories remain separate future decisions.
 
 ### MER-001 — Deterministic merchant normalization
 

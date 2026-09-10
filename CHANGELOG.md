@@ -9,6 +9,7 @@ All notable changes to Finance Data Converter are recorded here.
 - Non-blocking review guidance for zero amounts, ambiguous comma interpretation, extra source columns, and ambiguous generic header mappings.
 - Possible-duplicate review across Budget Tracker, Savings, and Expense Calculator using date, direction, amount, and normalized description.
 - Conservative merchant normalization with visible original descriptions when output changes.
+- Optional browser-local storage for the two Shared Expenses Paid By names, with an independent forget action.
 
 ### Changed
 

@@ -13,7 +13,13 @@ function loadConverter() {
   const coreScript = inline.slice(0, inline.indexOf(setupMarker));
   assert.ok(coreScript.length < inline.length, 'Expected to find the browser setup marker');
 
-  const context = { console, Intl, TextDecoder, URL, Blob, setTimeout, clearTimeout, ConverterCore };
+  const storedPreferences = new Map();
+  const localStorage = {
+    getItem: key => storedPreferences.has(key) ? storedPreferences.get(key) : null,
+    setItem: (key, value) => storedPreferences.set(key, String(value)),
+    removeItem: key => storedPreferences.delete(key)
+  };
+  const context = { console, Intl, TextDecoder, URL, Blob, setTimeout, clearTimeout, ConverterCore, localStorage };
   vm.createContext(context);
   vm.runInContext(`${coreScript}\n;globalThis.testApi={
     convert(destinationKey,text,name='Synthetic source'){
@@ -25,6 +31,8 @@ function loadConverter() {
     convertShared(blocks){destination='shared';sharedBlocks=blocks;excluded=0;duplicateCount=0;const result=buildSharedConversion(blocks);converted=result.rows;issues=result.issues;findings=result.findings;sharedDuplicateCount=result.possibleDuplicates;applyAccounting(result.accounting);source={headers:['Total Amount','Description'],rows:converted.map(r=>[r.amount,r.details]),name:'Shared Expenses pasted blocks',format:'shared-pastes'};detected=converted.length?{kind:'shared',label:'Shared Expenses'}:null;return this.snapshot()},
     select(index,value){converted[index].selected=value;return this.snapshot()},
     edit(index,changes){const result=applyRowEdit(converted[index],changes,destination);if(result.ok)refreshSharedDuplicates();return {result:JSON.parse(JSON.stringify(result)),snapshot:this.snapshot()}},
+    savePayers(first,second){sharedBlocks=[{payer:first,text:''},{payer:second,text:''}];rememberSharedPayers=true;return storePayerPreferences()},
+    reloadPayers(){sharedBlocks=[{payer:'',text:''},{payer:'',text:''}];savedSharedPayers=['',''];rememberSharedPayers=false;loadLocalPreferences();return {payers:[...savedSharedPayers],remember:rememberSharedPayers,stored:localStorage.getItem(preferenceKey)}},
     snapshot(){return JSON.parse(JSON.stringify({detected,converted,issues,findings,excluded,duplicateCount,accounting,sharedDuplicateCount,expenseMonths,csv:detected?csv():'',workbookRows:detected?workbookRows():'',totals:totals()}))}
   };`, context);
   const api = context.testApi;
@@ -34,7 +42,9 @@ function loadConverter() {
     selectExpenseMonth: (...args) => normalize(api.selectExpenseMonth(...args)),
     convertShared: (...args) => normalize(api.convertShared(...args)),
     select: (...args) => normalize(api.select(...args)),
-    edit: (...args) => normalize(api.edit(...args))
+    edit: (...args) => normalize(api.edit(...args)),
+    savePayers: (...args) => normalize(api.savePayers(...args)),
+    reloadPayers: (...args) => normalize(api.reloadPayers(...args))
   };
 }
 
@@ -109,6 +119,37 @@ test('merchant normalization is conservative and preserves original descriptions
   assert.equal(expense.rawDescription, 'Amazon.ca*5N6EW68O2   OTTAWA ON');
   assert.equal(expense.normalizedDescription, 'Amazon.ca*5N6EW68O2');
   assert.equal(core.normalizeDescription('SHOP UNKNOWNVILLE ON', 'tangerine-world-mc'), 'SHOP UNKNOWNVILLE ON');
+});
+
+test('local preferences accept payer names and discard financial fields', () => {
+  const core = require('../converter-core.js');
+  const preferences = core.sanitizeLocalPreferences({
+    sharedPayers: ['  Alex  ', 'Fawn'],
+    transactions: [{ amount: 100, description: 'Must not persist' }],
+    balance: 500,
+    workbookRows: 'Must not persist'
+  });
+
+  assert.deepEqual(preferences, {
+    version: 1,
+    sharedPayers: ['Alex', 'Fawn']
+  });
+  assert.equal(JSON.stringify(preferences).includes('100'), false);
+  assert.equal(JSON.stringify(preferences).includes('Must not persist'), false);
+});
+
+test('Paid By names round-trip through browser-local preferences', () => {
+  const app = loadConverter();
+
+  assert.equal(app.savePayers(' Alex ', 'Fawn'), true);
+  const result = app.reloadPayers();
+
+  assert.deepEqual(result.payers, ['Alex', 'Fawn']);
+  assert.equal(result.remember, true);
+  assert.deepEqual(JSON.parse(result.stored), {
+    version: 1,
+    sharedPayers: ['Alex', 'Fawn']
+  });
 });
 
 test('normalized descriptions are used in output and duplicate comparison', () => {
