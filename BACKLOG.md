@@ -18,10 +18,6 @@ Permit multiple files only for source profiles with explicit compatibility, acco
 
 ## Explore
 
-### PWA-001 — Offline and installable packaging
-
-Evaluate a service worker, install manifest, offline launch, update behavior, and accessible installed-app presentation.
-
 ### CFG-002 — Internal import recipes
 
 Formalize source-to-destination rules as maintainable configuration. Do not build a general-purpose visual rule editor without a demonstrated need.
@@ -33,6 +29,10 @@ Formalize source-to-destination rules as maintainable configuration. Do not buil
 Decide from real use whether to recognize occasional dates, support repeated blocks, offer configured payer choices, clean descriptions, show per-block source totals, or add month selection.
 
 ## Done
+
+### PWA-001 — Offline and installable packaging
+
+The HTTPS-hosted converter can be installed as a Progressive Web App and reopened offline after its application shell is cached. Browser-supported installation is surfaced in the header. Updates wait for a safe close-and-reopen instead of forcing an active financial-data session to refresh.
 
 ### CFG-001 — Local non-financial configuration
 

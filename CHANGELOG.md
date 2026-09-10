@@ -6,6 +6,8 @@ All notable changes to Finance Data Converter are recorded here.
 
 ### Added
 
+- Installable Progressive Web App packaging with branded icons and offline launch after the first online visit.
+- A browser-supported **Install app** action and a soft notice when an update is ready for the next relaunch.
 - Non-blocking review guidance for zero amounts, ambiguous comma interpretation, extra source columns, and ambiguous generic header mappings.
 - Possible-duplicate review across Budget Tracker, Savings, and Expense Calculator using date, direction, amount, and normalized description.
 - Conservative merchant normalization with visible original descriptions when output changes.
@@ -13,6 +15,7 @@ All notable changes to Finance Data Converter are recorded here.
 
 ### Changed
 
+- App updates wait for all converter windows to close instead of forcing a refresh during an active session.
 - Comma-only amounts now distinguish common decimal-comma values from thousands-separated values.
 - Possible duplicates remain selected and exportable until the user chooses to exclude them.
 

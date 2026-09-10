@@ -6,11 +6,25 @@ A small, local-first browser tool for converting supported Canadian banking expo
 
 Open `index.html` in a modern browser, choose the destination workbook, and import or paste source data. Review the conversion and then copy the workbook-ready rows or download the converted CSV.
 
-No installation, account, database, or server is required.
+No account, database, or application server is required.
+
+## Install and offline use
+
+When opened from GitHub Pages in a supported browser, the converter can be installed as a Progressive Web App (PWA). It is still the same web app, but it gets its own app icon and window and can reopen without an internet connection after the first successful visit.
+
+1. Open the hosted converter while online.
+2. Select **Install app** when that button appears, or use the browser's install option.
+3. Open Finance Data Converter from the computer's Applications or app launcher.
+
+The install button is shown only when the browser reports that the app is installable. Chrome and Edge generally support this flow. Other browsers may use **Add to Dock**, **Add to Home Screen**, or their own installation menu.
+
+Updates are downloaded in the background but do not force-refresh an active conversion. Close every open converter tab or installed-app window and reopen it when the app reports that an update is ready. Working financial data is not saved through an update or relaunch.
+
+Opening `index.html` directly remains supported for ordinary conversion. Installation and offline caching require the HTTPS-hosted version (or a local development server).
 
 ## Privacy
 
-Imported files are read and transformed in browser memory. The application contains no analytics, network requests, remote storage, or upload service. Closing or refreshing the page clears the working data.
+Imported files are read and transformed in browser memory. The application contains no analytics, remote storage, or upload service. The hosted app only retrieves its own static application files so they can be cached for offline use. Closing or refreshing the page clears the working data.
 
 Shared Expenses has an optional device-local preference for its two Paid By names. Only those names are stored when the user enables the setting. The saved names can be forgotten separately, and transactions, amounts, descriptions, dates, balances, and workbook contents are never included in local preferences.
 
@@ -28,7 +42,7 @@ Support is based on the structure of specific export formats and is not a guaran
 
 ## Security
 
-The included page uses a restrictive Content Security Policy and does not load remote resources. Static hosting is recommended. HTTPS should be enabled by the hosting provider.
+The included page uses a restrictive Content Security Policy and does not load third-party resources. Static hosting is recommended. HTTPS should be enabled by the hosting provider.
 
 ## Testing
 

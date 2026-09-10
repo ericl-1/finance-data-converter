@@ -575,3 +575,36 @@ test('unsupported columns fail without producing converted rows', () => {
   assert.match(result.issues[0], /Date and Details\/Description/);
   assert.deepEqual(result.findings.map(finding => finding.kind), ['no-output']);
 });
+
+test('PWA metadata and offline shell stay complete and session-safe', () => {
+  const root = path.join(__dirname, '..');
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.webmanifest'), 'utf8'));
+  const serviceWorker = fs.readFileSync(path.join(root, 'service-worker.js'), 'utf8');
+
+  assert.equal(manifest.display, 'standalone');
+  assert.equal(manifest.start_url, './');
+  assert.deepEqual(manifest.icons.map(icon => icon.sizes), ['192x192', '512x512', '512x512']);
+  assert.match(html, /rel="manifest" href="manifest\.webmanifest"/);
+  assert.match(html, /id="installApp"/);
+  assert.match(html, /navigator\.serviceWorker\.register\('\.\/service-worker\.js'\)/);
+  assert.match(html, /worker-src 'self'/);
+
+  for (const asset of ['index.html', 'converter-core.js', 'manifest.webmanifest', 'icons/app-icon-192.png', 'icons/app-icon-512.png', 'icons/app-icon-maskable-512.png']) {
+    assert.ok(fs.existsSync(path.join(root, asset)), `Expected ${asset} to exist`);
+    assert.ok(serviceWorker.includes(`'./${asset}'`), `Expected ${asset} in the offline shell`);
+  }
+  assert.doesNotMatch(serviceWorker, /skipWaiting/, 'Updates must not force an active session to reload');
+});
+
+test('PWA PNG icons have the declared dimensions', () => {
+  const dimensions = file => {
+    const png = fs.readFileSync(path.join(__dirname, '..', file));
+    assert.equal(png.subarray(1, 4).toString(), 'PNG');
+    return [png.readUInt32BE(16), png.readUInt32BE(20)];
+  };
+
+  assert.deepEqual(dimensions('icons/app-icon-192.png'), [192, 192]);
+  assert.deepEqual(dimensions('icons/app-icon-512.png'), [512, 512]);
+  assert.deepEqual(dimensions('icons/app-icon-maskable-512.png'), [512, 512]);
+});
